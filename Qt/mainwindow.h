@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <array>
 #include <QPushButton>
+#include <QSerialPort>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -21,9 +22,11 @@ private slots:
     void on_btnInc_clicked();              // «+»
     void on_btnOk_clicked();               // «OK»
     void on_cell_clicked();                // любой из 9 <QPushButton>
+    void on_data_recieved();                // recieve data from com port
 
 private:
     Ui::MainWindow *ui;
+    QSerialPort *port;
 
     std::array<int,9> board{};             // 0-пусто,1-X,2-O
     int cursor = 0;                        // выбранная клетка (0-8)
@@ -37,5 +40,6 @@ private:
     void switchPlayer();                   // X⇄O
     bool checkWin(int p) const;            // победа?
     void resetGame();                      // очистить поле
+    void initPort();
 };
 #endif

@@ -8,28 +8,40 @@
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
-{
+    , ui(new Ui::MainWindow) {
     ui->setupUi(this);
 
-
     for (int r = 0; r < 3; ++r)
-        for (int c = 0; c < 3; ++c)
-        {
+        for (int c = 0; c < 3; ++c) {
             int idx = r*3 + c;
             cells[idx] = findChild<QPushButton*>(
                             QString("cell%1%2").arg(r).arg(c));
         }
 
+    initPort();
     updateCursorLCD();
     redrawBoard();
     updateHighlight();
     resetGame();
 }
-MainWindow::~MainWindow() { delete ui; }
+MainWindow::~MainWindow() { delete ui; port->close(); }
 
-void MainWindow::updateHighlight()
-{
+
+void MainWindow::initPort() {
+    this->port = new QSerialPort("COM2"); // COM2 should exist (create it with VSPE first)
+    port->setBaudRate(QSerialPort::Baud9600);
+    port->setDataBits(QSerialPort::Data8);
+    port->setStopBits(QSerialPort::OneStop);
+    port->open(QSerialPort::ReadWrite);
+    if (port->isOpen()) {
+        qDebug() << "Port is open!\n";
+        connect(port, SIGNAL(readyRead()), this, SLOT(on_data_recieved()));
+    } else {
+        qDebug() << "Can't open port\n";
+    }
+}
+
+void MainWindow::updateHighlight() {
     const QString colorX = "#ff8c00";   // оранжевый
     const QString colorO = "#0066ff";   // синий
 
@@ -54,15 +66,22 @@ void MainWindow::updateHighlight()
     }
 }
 
+void MainWindow::on_data_recieved() {
+    char buffer[16];
+    if (port->bytesAvailable()) {
+        int numRead = port->read(buffer, 10);
+        qDebug() << "read " << numRead << " bytes from port\n";
+        qDebug() << buffer << "\n";
+    }
+}
 
-void MainWindow::on_btnInc_clicked()
-{
+
+void MainWindow::on_btnInc_clicked() {
     cursor = (cursor + 1) % 9;
     updateCursorLCD();
 }
 
-void MainWindow::on_btnOk_clicked()
-{
+void MainWindow::on_btnOk_clicked() {
     if (board[cursor] != 0)
         return;
 
@@ -90,8 +109,7 @@ void MainWindow::on_btnOk_clicked()
     updateCursorLCD();
 }
 
-void MainWindow::on_cell_clicked()
-{
+void MainWindow::on_cell_clicked() {
     QPushButton *btn = qobject_cast<QPushButton*>(sender());
     int idx = -1;
     for (int r = 0; r < 3; ++r)
@@ -104,28 +122,24 @@ void MainWindow::on_cell_clicked()
     updateCursorLCD();
 }
 
-void MainWindow::updateCursorLCD()
-{
+void MainWindow::updateCursorLCD() {
     ui->lcdCell->display(cursor);
     updateHighlight();
 }
 
-void MainWindow::redrawBoard()
-{
+void MainWindow::redrawBoard() {
     for (int i = 0; i < 9; ++i)
         cells[i]->setText(board[i] == 1 ? "X" :
                           board[i] == 2 ? "O" : "");
 }
 
-void MainWindow::switchPlayer()
-{
+void MainWindow::switchPlayer() {
     player = 3 - player;                // 1↔2
     ui->labelPlayer->setText(
         player == 1 ? "Ход: X" : "Ход: O");
 }
 
-bool MainWindow::checkWin(int p) const
-{
+bool MainWindow::checkWin(int p) const {
     static const int w[8][3] = { {0,1,2},{3,4,5},{6,7,8},
                                  {0,3,6},{1,4,7},{2,5,8},
                                  {0,4,8},{2,4,6} };
@@ -136,8 +150,7 @@ bool MainWindow::checkWin(int p) const
     return false;
 }
 
-void MainWindow::resetGame()
-{
+void MainWindow::resetGame() {
     board.fill(0);
     cursor   = 0;
     player   = 1;
