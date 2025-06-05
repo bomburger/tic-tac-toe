@@ -1,10 +1,12 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
+#include <stdint.h>
 
 #include <QPushButton>
 #include <QMessageBox>
 #include <QDebug>
 #include <QSerialPort>
+#include <QByteArray>
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent)
@@ -67,14 +69,23 @@ void MainWindow::updateHighlight() {
 }
 
 void MainWindow::on_data_recieved() {
-    char buffer[16];
-    if (port->bytesAvailable()) {
-        int numRead = port->read(buffer, 10);
-        qDebug() << "read " << numRead << " bytes from port\n";
-        qDebug() << buffer << "\n";
+    QByteArray bytes = port->readAll();
+    for (auto byte : bytes) {
+        quint8 u = static_cast<quint8>(byte);
+        QString bits = QString("%1").arg(u, /*fieldWidth=*/8,
+                                        /*base=*/2,  QLatin1Char('0'));
+        qDebug() << bits << "\n";
+    }
+    uint8_t data = bytes[0];
+    uint8_t cursor_shift = data & (1 << 7);
+    if (cursor_shift) {
+        on_btnInc_clicked();
+    }
+    uint8_t select = data & (1 << 6);
+    if (select) {
+        on_btnOk_clicked();
     }
 }
-
 
 void MainWindow::on_btnInc_clicked() {
     cursor = (cursor + 1) % 9;
@@ -104,6 +115,7 @@ void MainWindow::on_btnOk_clicked() {
         return;
     }
 
+    sendMoveData(player, cursor);
     cursor = 0;
     switchPlayer();
     updateCursorLCD();
@@ -120,6 +132,16 @@ void MainWindow::on_cell_clicked() {
     if (idx == -1) return;
     cursor = idx;
     updateCursorLCD();
+}
+
+void MainWindow::sendMoveData(int shape, int cell) {
+    uint8_t data = 0;
+    if (shape == 2) {
+        data |= (1 << 4);
+    }
+    data |= cell;
+    QByteArray ba(1, static_cast<char>(data));
+    port->write(ba);
 }
 
 void MainWindow::updateCursorLCD() {
@@ -157,4 +179,7 @@ void MainWindow::resetGame() {
     updateCursorLCD();
     redrawBoard();
     ui->labelPlayer->setText("Ход: X");
+
+    char reset = 0 | (1 << 7);
+    port->write(QByteArray(1, reset));
 }

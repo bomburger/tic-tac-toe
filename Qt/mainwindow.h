@@ -41,5 +41,6 @@ private:
     bool checkWin(int p) const;            // победа?
     void resetGame();                      // очистить поле
     void initPort();
+    void sendMoveData(int shape, int cell);
 };
 #endif
