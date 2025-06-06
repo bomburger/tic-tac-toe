@@ -5,7 +5,7 @@
 
 ## Tic Tac Toe
 
-TTic Tac Toe game using an 80C31 microcontroller simulated in Proteus, with a Qt app communicating via COM port.
+Tic Tac Toe game using an 80C31 microcontroller simulated in Proteus, with a Qt app communicating via COM port.
 
 ---
 
