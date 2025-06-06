@@ -198,10 +198,10 @@ void process_data(void) {
 	// for select:
 	// cccc <- 0100; dddd <- 0000
 	if (CURSOR_PIN == 0) {
-		uint8 data = 0;
-		data |= (1 << 7);
 		cursor = (cursor + 1) % 9;
 		display_digit(cursor + 1);
+		uint8 data = 0;
+		data |= (1 << 7);
 		data |= cursor;
 		UART_write(data);
 	} else if (SELECT_PIN == 0) {
