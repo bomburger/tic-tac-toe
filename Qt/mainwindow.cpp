@@ -70,19 +70,12 @@ void MainWindow::updateHighlight() {
 
 void MainWindow::on_data_recieved() {
     QByteArray bytes = port->readAll();
-    for (auto byte : bytes) {
-        quint8 u = static_cast<quint8>(byte);
-        QString bits = QString("%1").arg(u, /*fieldWidth=*/8,
-                                        /*base=*/2,  QLatin1Char('0'));
-        qDebug() << bits << "\n";
-    }
     uint8_t data = bytes[0];
     uint8_t cursor_shift = data & (1 << 7);
+    uint8_t select = data & (1 << 6);
     if (cursor_shift) {
         on_btnInc_clicked();
-    }
-    uint8_t select = data & (1 << 6);
-    if (select) {
+    } else if (select) {
         on_btnOk_clicked();
     }
 }
@@ -132,6 +125,10 @@ void MainWindow::on_cell_clicked() {
     if (idx == -1) return;
     cursor = idx;
     updateCursorLCD();
+
+    char data = 0 | (1 << 6);
+    data |= cursor;
+    port->write(QByteArray(1, data));
 }
 
 void MainWindow::sendMoveData(int shape, int cell) {
@@ -145,7 +142,7 @@ void MainWindow::sendMoveData(int shape, int cell) {
 }
 
 void MainWindow::updateCursorLCD() {
-    ui->lcdCell->display(cursor);
+    ui->lcdCell->display(cursor + 1);
     updateHighlight();
 }
 
