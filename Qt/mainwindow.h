@@ -5,6 +5,7 @@
 #include <array>
 #include <QPushButton>
 #include <QSerialPort>
+#include <QLabel>
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -25,6 +26,18 @@ private slots:
     void on_data_recieved();                // recieve data from com port
 
 private:
+    struct Move
+    {
+        int player;      // 1-X, 2-O
+        int cell;        // 0-8
+    };
+    using Game  = QVector<Move>;          // партия = список ходов
+    QVector<Game> history;                // ≤3 завершённых игр
+
+    Game currentGame;                     // текущая партия
+
+    std::array<std::array<QLabel*,9>,3> histCells{};   // [доска][клетка]
+
     Ui::MainWindow *ui;
     QSerialPort *port;
 
@@ -42,5 +55,8 @@ private:
     void resetGame();                      // очистить поле
     void initPort();
     void sendMoveData(int shape, int cell);
+    void saveHistory() const;
+    void loadHistory();
+    void refreshHistoryBoards();
 };
 #endif
