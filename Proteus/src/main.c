@@ -33,7 +33,8 @@
 #define TURN_PIN P2_4 // should go low to light up led
 
 
-uint8 cursor; // 1 - X, 2 - O;
+static uint8 cursor; // 1 - X, 2 - O;
+static uint8 board[9];
 
 // initializing com port
 void UART_init(void){ 
@@ -98,8 +99,49 @@ void display_digit(int digit) {
 }
 
 void display_shape(int cell, int shape) {
+	if (shape == 0) {
+		// None
+		switch(cell) {
+			case 0:
+				X1 = 1;
+				O1 = 1;
+				break;
+			case 1:
+				X2 = 1;
+				O2 = 1;
+				break;
+			case 2:
+				X3 = 1;
+				O3 = 1;
+				break;
+			case 3:
+				X4 = 1;
+				O4 = 1;
+				break;
+			case 4:
+				X5 = 1;
+				O5 = 1;
+				break;
+			case 5:
+				X6 = 1;
+				O6 = 1;
+				break;
+			case 6:
+				X7 = 1;
+				O7 = 1;
+				break;
+			case 7:
+				X8 = 1;
+				O8 = 1;
+				break;
+			case 8:
+				X9 = 1;
+				O9 = 1;
+				break;
+		}
+	}
 	if (shape == 1) { 
-	// X
+		// X
 		switch(cell) {
 			case 0:
 				X1 = 0;
@@ -131,7 +173,7 @@ void display_shape(int cell, int shape) {
 		}
 	}
 	if (shape == 2) { 
-	// O
+		// O
 		switch(cell) {
 			case 0:
 				O1 = 0;
@@ -179,18 +221,27 @@ void process_data(void) {
 			cursor = 0;
 			display_digit(1);
 			TURN_PIN = 1;
+			for (int i = 0; i < 9; i++) board[i] = 0;
 		} else if (data & (1 << 6)) {
 			// cursor placement
+			display_shape(cursor, 0);
+			display_shape(cursor, board[cursor]);
 			cursor = data & 0x0F;
+			display_shape(cursor, 1);
+			display_shape(cursor, 2);
 			display_digit(cursor + 1);
 		} else {
 			// shape placement
 			int shape = (data & (1 << 4)) == 0? 1 : 2; // maps 0,1 -> 1,2
 			int cell = data & 0x0F; // just take 4 least bits
+				
 			display_shape(cell, shape);
-			cursor = 0;
-			display_digit(1);
+
+			//cursor = 0;
+			//display_digit(1);
+
 			TURN_PIN = shape - 1;
+			board[cell] = shape;
 		}
 	}
 
@@ -203,7 +254,11 @@ void process_data(void) {
 	// for select:
 	// cccc <- 0100; dddd <- 0000
 	if (CURSOR_PIN == 0) {
+		display_shape(cursor, 0);
+		display_shape(cursor, board[cursor]);
 		cursor = (cursor + 1) % 9;
+		display_shape(cursor, 1);
+		display_shape(cursor, 2);
 		display_digit(cursor + 1);
 		uint8 data = 0;
 		data |= (1 << 7);
@@ -221,6 +276,12 @@ void main(void) {
 	UART_init();
 	reset_led_matrix();
 	reset_num_display();
+	for (int i = 0; i < 9; i++) {
+		board[i] = 0;
+	}
+	display_digit(1);
+	display_shape(0, 1);
+	display_shape(0, 2);
 	while(1) {
 		process_data();
 	}

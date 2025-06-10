@@ -141,7 +141,7 @@ void MainWindow::on_btnOk_clicked() {
     }
 
     sendMoveData(player, cursor);
-    cursor = 0;
+    //cursor = 0;
     switchPlayer();
     updateCursorLCD();
 }
